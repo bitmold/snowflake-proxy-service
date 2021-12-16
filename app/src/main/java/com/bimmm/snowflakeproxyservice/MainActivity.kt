@@ -1,35 +1,62 @@
 package com.bimmm.snowflakeproxyservice
 
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.NetworkRequest
+import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 
-import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
-import android.widget.Toast
+import android.widget.TextView
+import androidx.annotation.RequiresApi
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var powerReceiver : PowerConnectionReceiver
-    lateinit var wifiManager: WifiManager
+    private lateinit var connectivityManager: ConnectivityManager
 
+
+    private lateinit var tvPower : TextView
+    private lateinit var tvMetered : TextView
+
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         powerReceiver = setupPowerStateChange()
+        connectivityManager = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), NetworkConnectionCallback(this))
 
-        wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        registerReceiver(WifiConnectionReceiver(wifiManager), IntentFilter().apply {
-            addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
-        })
+        tvPower = findViewById(R.id.tvPower)
+        tvMetered = findViewById(R.id.tvMetered)
+
+
+        testActiveNetwork23()
+        // initial check if are plugged in...
+        updatePowerStatus(PowerConnectionReceiver.currentPowerStateCharged(this))
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun testActiveNetwork23() {
+            Log.d(
+                "test",
+                "\tconnectivityManager.activeNetwork=${connectivityManager.activeNetwork}"
+            )
+            Log.d(
+                 "test",
+                "\tconnectivityManager.isActiveNetworkMetered=${connectivityManager.isActiveNetworkMetered}"
+            )
+
+        tvMetered.text = "Active Network Metered: ${connectivityManager.isActiveNetworkMetered}"
 
     }
 
     private fun setupPowerStateChange() : PowerConnectionReceiver {
-        var receiver = PowerConnectionReceiver()
+        var receiver = PowerConnectionReceiver(this)
         registerReceiver(receiver, IntentFilter().apply {
             addAction(Intent.ACTION_POWER_DISCONNECTED)
             addAction(Intent.ACTION_POWER_CONNECTED)
@@ -37,19 +64,8 @@ class MainActivity : AppCompatActivity() {
         return receiver
     }
 
-    class WifiConnectionReceiver(private val wifiManager: WifiManager) : BroadcastReceiver() {
-
-        // so far this just checks if wifi is enabled, disabled or in between NOT if there is a connection
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (WifiManager.WIFI_STATE_CHANGED_ACTION != intent?.action) return
-            val state = intent?.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN)
-            Log.d("test", "state=$state")
-            if (state == WifiManager.WIFI_STATE_ENABLED)
-                Log.d("test", "\t wifi enabled")
-            else if (state == WifiManager.WIFI_STATE_DISABLED)
-                Log.d("test", "\t wifi disabled")
-
-        }
+    fun updatePowerStatus(isPowerPresent: Boolean) {
+        tvPower.text = "Is Power: $isPowerPresent"
     }
 
 }
