@@ -15,13 +15,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SnowflakeProxyService">
 
-        <receiver android:name=".PowerConnectionReceiver"
-            android:exported="false"> <!-- TODO wtf is this should it be true?! -->
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
-                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
-            </intent-filter>
-        </receiver>
+<!--        <receiver android:name=".PowerConnectionReceiver"-->
+<!--            android:exported="false"> &lt;!&ndash; TODO wtf is this should it be true?! &ndash;&gt;-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>-->
+<!--                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+        <service android:name=".SnowflakeProxyService"/>
 
         <activity
             android:name=".MainActivity"

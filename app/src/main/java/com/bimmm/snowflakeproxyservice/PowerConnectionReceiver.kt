@@ -5,22 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
-import android.widget.Toast
 
-class PowerConnectionReceiver(private val activity: MainActivity) : BroadcastReceiver() {
+class PowerConnectionReceiver(private val callback: Callback) : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         when (intent?.action) {
-            Intent.ACTION_POWER_CONNECTED -> {
-                Toast.makeText(context?.applicationContext, "connected", Toast.LENGTH_LONG).show()
-                activity.updatePowerStatus(true)
-            }
-            Intent.ACTION_POWER_DISCONNECTED -> {
-                Toast.makeText(context?.applicationContext, "disconnected", Toast.LENGTH_LONG).show()
-                activity.updatePowerStatus(false)
-            }
-            else -> Toast.makeText(context?.applicationContext, "something else?!", Toast.LENGTH_LONG).show()
+            Intent.ACTION_POWER_CONNECTED -> callback.onPowerStateChanged(true)
+            else -> callback.onPowerStateChanged(false)
         }
+    }
+
+    interface Callback {
+        fun onPowerStateChanged(isPowerConnected : Boolean)
     }
 
     companion object {

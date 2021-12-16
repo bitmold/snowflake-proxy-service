@@ -7,17 +7,31 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <androidx.appcompat.widget.SwitchCompat
+        android:checked="true"
+        android:id="@+id/checkBoxPower"
+        android:layout_margin="4dp"
+        android:text="Only run snowflake when power is connected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:checked="true"
+        android:layout_margin="4dp"
+        android:text="Only run snowflake when the network connection isn't restricted"
+        android:id="@+id/checkBoxUnmetered"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btnStartService"
+        android:text="Start Service"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textStyle="bold"
-        android:id="@+id/tvPower"/>
-
-
-    <TextView
-        android:id="@+id/tvMetered"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textStyle="bold"/>
+        android:id="@+id/tvCount"/>
 
 </LinearLayout>

@@ -1,71 +1,41 @@
 package com.bimmm.snowflakeproxyservice
 
 import android.content.Intent
-import android.content.IntentFilter
-import android.net.ConnectivityManager
-import android.net.NetworkRequest
-import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 
-import android.os.Build
-import android.util.Log
-import android.widget.TextView
-import androidx.annotation.RequiresApi
+import android.widget.*
+import androidx.appcompat.widget.SwitchCompat
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var tvCount : TextView
 
-    private lateinit var powerReceiver : PowerConnectionReceiver
-    private lateinit var connectivityManager: ConnectivityManager
+    private var count = -1
 
-
-    private lateinit var tvPower : TextView
-    private lateinit var tvMetered : TextView
-
-    @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        powerReceiver = setupPowerStateChange()
-        connectivityManager = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), NetworkConnectionCallback(this))
+        tvCount = findViewById(R.id.tvCount)
+        findViewById<SwitchCompat>(R.id.checkBoxPower).setOnCheckedChangeListener { _, isChecked ->
+            SnowflakeProxyService.shouldCheckForPower = isChecked
+        }
+        findViewById<SwitchCompat>(R.id.checkBoxUnmetered).setOnCheckedChangeListener { _, isChecked ->
+            SnowflakeProxyService.shouldCheckForUnmetered = isChecked
+        }
 
-        tvPower = findViewById(R.id.tvPower)
-        tvMetered = findViewById(R.id.tvMetered)
+        findViewById<Button>(R.id.btnStartService).setOnClickListener {
+            var intent = Intent(this, SnowflakeProxyService::class.java)
+            startService(intent)
+        }
 
-
-        testActiveNetwork23()
-        // initial check if are plugged in...
-        updatePowerStatus(PowerConnectionReceiver.currentPowerStateCharged(this))
-    }
-
-
-    @RequiresApi(Build.VERSION_CODES.M)
-    fun testActiveNetwork23() {
-            Log.d(
-                "test",
-                "\tconnectivityManager.activeNetwork=${connectivityManager.activeNetwork}"
-            )
-            Log.d(
-                 "test",
-                "\tconnectivityManager.isActiveNetworkMetered=${connectivityManager.isActiveNetworkMetered}"
-            )
-
-        tvMetered.text = "Active Network Metered: ${connectivityManager.isActiveNetworkMetered}"
+        updateCount()
 
     }
 
-    private fun setupPowerStateChange() : PowerConnectionReceiver {
-        var receiver = PowerConnectionReceiver(this)
-        registerReceiver(receiver, IntentFilter().apply {
-            addAction(Intent.ACTION_POWER_DISCONNECTED)
-            addAction(Intent.ACTION_POWER_CONNECTED)
-        })
-        return receiver
+    private fun updateCount() {
+        tvCount.text = "Clients Connected: ${++count}"
     }
 
-    fun updatePowerStatus(isPowerPresent: Boolean) {
-        tvPower.text = "Is Power: $isPowerPresent"
-    }
+
 
 }
