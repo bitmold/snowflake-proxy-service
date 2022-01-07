@@ -9,27 +9,41 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
+import android.os.Binder
 import android.os.Handler
 import android.util.Log
 import android.widget.Toast
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import java.io.File
 
 class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder? = binder
 
+    inner class LocalBinder : Binder() {
+        fun getService() : SnowflakeProxyService = this@SnowflakeProxyService
+    }
+    private val binder = LocalBinder()
+
+    private var shouldCheckForPower = false
+    private var shouldCheckForUnmetered = false
 
     companion object {
-        var shouldCheckForPower = true
-        var shouldCheckForUnmetered = true
+        val ACTION_CLIENT_CONNECTED = "com.bimm.snowflakeproxyservice.ACTION_CLIENT_CONNECTED"
+        val ACTION_START = "com.bimm.snowflakeproxyservice.ACTION_START"
+        val EXTRA_START_CHECK_POWER = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_POWER"
+        val EXTRA_START_CHECK_UNMETERED = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_UNMETERED"
+        val ACTION_PAUSING = "com.bimm.snowflakeproxyservice.ACTION_PAUSING"
+        val EXTRA_PAUSING_REASON = "com.bimm.snowflakeproxyservice.EXTRA_PAUSING_REASON"
+        val ACTION_RESUMING = "com.bimm.snowflakeproxyservice.ACTION_RESUMING"
     }
 
     private lateinit var connectivityManager: ConnectivityManager
     private lateinit var powerReceiver: PowerConnectionReceiver
 
-    var isPowerConnected = false
-    var isUnmetered = false
-    var isProxyRunning = false
+    private var isPowerConnected = false
+    private var isUnmetered = false
+    private var isProxyRunning = false
 
 
     override fun onCreate() {
@@ -76,7 +90,12 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return super.onStartCommand(intent, flags, startId)
+        super.onStartCommand(intent, flags, startId)
+        shouldCheckForPower = intent?.getBooleanExtra(EXTRA_START_CHECK_POWER, false) ?: false
+        shouldCheckForUnmetered = intent?.getBooleanExtra(EXTRA_START_CHECK_UNMETERED, false) ?: false
+        Log.d("test", "shouldCheckForPower=$shouldCheckForPower")
+        Log.d("test", "shouldCheckForUnmetered=$shouldCheckForUnmetered")
+        return START_STICKY
     }
 
     override fun onPowerStateChanged(isPowerConnected: Boolean) {
@@ -90,12 +109,13 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
     }
 
     private fun onStateUpdated() {
+        Log.d("test", "onStateUpdated()")
         if (shouldCheckForPower && !isPowerConnected) {
-            stopSnowflakeProxy("power isn't connected")
+            pauseSnowflakeProxy("power isn't connected")
             return
         }
         if (shouldCheckForUnmetered && !isUnmetered) {
-            stopSnowflakeProxy("network is metered")
+            pauseSnowflakeProxy("network is metered")
             return
         }
         // if the proxy is already started, calling start has no effect
@@ -112,7 +132,6 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         val keepLocalAddresses = true
         val unsafeLogging = true // todo for now ...
         if (!isProxyRunning) {
-            Toast.makeText(this, "Starting snowflake proxy...", Toast.LENGTH_LONG).show()
             IPtProxy.startSnowflakeProxy(
                 1,
                 broker,
@@ -130,18 +149,21 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
                         Toast.LENGTH_LONG
                     ).show()
                 }
+                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_CLIENT_CONNECTED))
             }
             isProxyRunning = true
+            LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_RESUMING))
         }
     }
 
 
-    private fun stopSnowflakeProxy(reason: String) {
-        Log.d("test", "stopping snowflake proxy: $reason")
+    private fun pauseSnowflakeProxy(reason: String) {
+        Log.d("test", "pausing snowflake proxy: $reason")
         if (isProxyRunning) {
-            Toast.makeText(this, "Stopping snowflake proxy: $reason", Toast.LENGTH_LONG).show()
             IPtProxy.stopSnowflakeProxy()
             isProxyRunning = false
+            var intent = Intent(ACTION_PAUSING).putExtra(EXTRA_PAUSING_REASON, reason)
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
         }
     }
 
