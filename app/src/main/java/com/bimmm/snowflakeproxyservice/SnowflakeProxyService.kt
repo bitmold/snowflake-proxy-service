@@ -217,7 +217,7 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         Log.d("test", "Starting snowflake proxy...")
         if (!isProxyRunning) {
             IPtProxy.startSnowflakeProxy(
-                proxyCapacity as Long, proxyBrokerUrl, proxyRelayUrl,
+                proxyCapacity.toLong(), proxyBrokerUrl, proxyRelayUrl,
                 proxyStunUrl, proxyNatProbeUrl, proxyLogFileName,
                 proxyKeepLocalAddresses, proxyUnsafeLogging
             ) {
@@ -234,6 +234,7 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
             }
             isProxyRunning = true
             LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_RESUMING))
+            showNotificationText()
         }
     }
 

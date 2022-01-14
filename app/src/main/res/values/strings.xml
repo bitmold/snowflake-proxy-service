@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name">SnowflakeProxyService</string>
+    <string name="app_name">Snowflake Proxy Service</string>
     <string name="snowflake_proxy">Snowflake Proxy</string>
     <string name="clients_connected" formatted="true">Clients Connected: %d</string>
     <string name="snowflake_proxy_running">Snowflake Proxy Running</string>
     <string name="snowflake_proxy_paused">Snowflake Proxy Paused</string>
     <string name="pause_reason_power">Power Disconnected</string>
-    <string name="pause_reason_network">No Unmetered Connection</string>
+    <string name="pause_reason_network">No Unmetered Network Connection</string>
     <string name="notification_channel_description">Runtime information about the Snowflake Proxy</string>
     <string name="client_connected_toast_msg">%s Your snowflake proxy helped someone circumvent censorship %s</string>
 </resources>

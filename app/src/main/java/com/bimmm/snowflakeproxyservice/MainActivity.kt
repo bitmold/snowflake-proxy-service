@@ -49,7 +49,8 @@ class MainActivity : AppCompatActivity() {
             registerReceiver(receiver, IntentFilter(SnowflakeProxyService.ACTION_RESUMING))
         }
 
-        updateCount()
+        tvCount.text = "Clients Connected: 0"
+
     }
 
     override fun onDestroy() {
@@ -69,7 +70,7 @@ class MainActivity : AppCompatActivity() {
     private var receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) = when (intent?.action) {
             SnowflakeProxyService.ACTION_CLIENT_CONNECTED -> {
-                updateCount()
+                tvCount.text = "Clients Connected: ${intent?.getIntExtra(SnowflakeProxyService.EXTRA_CLIENT_CONNECTED_COUNT, -1)}"
             }
             SnowflakeProxyService.ACTION_PAUSING -> {
                 var reason = intent.getStringExtra(SnowflakeProxyService.EXTRA_PAUSING_REASON)
@@ -81,10 +82,6 @@ class MainActivity : AppCompatActivity() {
             else -> {
             }
         }
-    }
-
-    private fun updateCount() {
-        tvCount.text = "Clients Connected: ${++count}"
     }
 
     companion object {
