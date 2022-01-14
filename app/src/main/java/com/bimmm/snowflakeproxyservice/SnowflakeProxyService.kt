@@ -35,9 +35,11 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
     companion object {
         const val ACTION_CLIENT_CONNECTED = "com.bimm.snowflakeproxyservice.ACTION_CLIENT_CONNECTED"
+        const val EXTRA_CLIENT_CONNECTED_COUNT = "com.bimm.snowflakeproxyservice.EXTRA_CLIENT_CONNECTED_COUNT"
         const val ACTION_START = "com.bimm.snowflakeproxyservice.ACTION_START"
         const val EXTRA_START_CHECK_POWER = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_POWER"
         const val EXTRA_START_CHECK_UNMETERED = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_UNMETERED"
+        const val EXTRA_START_SHOW_TOAST = "com.bimm.snowflakeproxyservice.EXTRA_START_SHOW_TOAST"
 
         const val ACTION_PAUSING = "com.bimm.snowflakeproxyservice.ACTION_PAUSING"
         const val EXTRA_PAUSING_REASON = "com.bimm.snowflakeproxyservice.EXTRA_PAUSING_REASON"
@@ -54,10 +56,13 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
         private const val ONGOING_NOTIFICATION_CHANNEL = "snowflake_proxy_channel"
         private const val ONGOING_NOTIFICATION_ID = 1
+        private const val SNOWFLAKE_EMOJI = "❄️"
     }
 
     private lateinit var connectivityManager: ConnectivityManager
     private lateinit var powerReceiver: PowerConnectionReceiver
+
+    private var showToast = false
 
     private var isPowerConnected = false
     private var isUnmetered = false
@@ -77,7 +82,6 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("test", "onCreate()")
         configIPtProxy()
         connectivityManager = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         initializeStateVars()
@@ -127,6 +131,8 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         shouldCheckForPower = intent.getBooleanExtra(EXTRA_START_CHECK_POWER, false)
         shouldCheckForUnmetered = intent.getBooleanExtra(EXTRA_START_CHECK_UNMETERED, false)
 
+        showToast = intent.getBooleanExtra(EXTRA_START_SHOW_TOAST, true)
+
         proxyCapacity = intent.getIntExtra(EXTRA_PROXY_CAPACITY, 1)
         proxyNatProbeUrl = intent.getStringExtra(EXTRA_PROXY_NAT_PROBE_URL)
         proxyBrokerUrl = intent.getStringExtra(EXTRA_PROXY_BROKER_URL)
@@ -142,15 +148,15 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         return START_STICKY
     }
 
-    private fun showNotificationText() = showNotificationText("Clients Connected: $clientsConnected")
+    private fun showNotificationText() = showNotificationText(getString(R.string.clients_connected, clientsConnected), true)
 
-    private fun showNotificationText(text: String) {
+    private fun showNotificationText(text: String, isRunning: Boolean) {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val appIntent = packageManager.getLaunchIntentForPackage(packageName)
 
         if (notificationBuilder == null) {
             notificationBuilder = NotificationCompat.Builder(this, ONGOING_NOTIFICATION_CHANNEL)
-                .setContentTitle("Snowflake Proxy Service")
+                .setContentTitle(getString(R.string.snowflake_proxy))
                 .setContentIntent(PendingIntent.getActivity(this, 0, appIntent, 0))
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setPriority(NotificationManager.IMPORTANCE_LOW)
@@ -158,7 +164,10 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
                 .setOngoing(true)
         }
 
-        val notification = notificationBuilder?.setContentText(text)?.build()
+        val notification = notificationBuilder?.apply {
+            setContentText(text)
+            setContentTitle(getString(if (isRunning) R.string.snowflake_proxy_running else R.string.snowflake_proxy_paused))
+        }?.build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createNotificationChannel(notificationManager)
@@ -170,11 +179,10 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(notificationManager: NotificationManager) {
-        Log.d("foo", "create channel")
-        val channel = NotificationChannel(ONGOING_NOTIFICATION_CHANNEL, "Snowflake Proxy Service", NotificationManager.IMPORTANCE_LOW).apply {
+        val channel = NotificationChannel(ONGOING_NOTIFICATION_CHANNEL, getString(R.string.snowflake_proxy), NotificationManager.IMPORTANCE_LOW).apply {
             lightColor = Color.BLUE
             lockscreenVisibility = Notification.VISIBILITY_SECRET
-            description = "Information about snowflake"
+            description = getString(R.string.notification_channel_description)
             enableVibration(false)
             setShowBadge(false)
         }
@@ -194,11 +202,11 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
     private fun onStateUpdated() {
         Log.d("test", "onStateUpdated()")
         if (shouldCheckForPower && !isPowerConnected) {
-            pauseSnowflakeProxy("power isn't connected")
+            pauseSnowflakeProxy(getString(R.string.pause_reason_power))
             return
         }
         if (shouldCheckForUnmetered && !isUnmetered) {
-            pauseSnowflakeProxy("network is metered")
+            pauseSnowflakeProxy(getString(R.string.pause_reason_network))
             return
         }
         // if the proxy is already started, calling start has no effect
@@ -213,15 +221,15 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
                 proxyStunUrl, proxyNatProbeUrl, proxyLogFileName,
                 proxyKeepLocalAddresses, proxyUnsafeLogging
             ) {
-                Handler(mainLooper).post {
-                    Toast.makeText(
-                        applicationContext,
-                        "Snowflake client connected",
-                        Toast.LENGTH_LONG
-                    ).show()
+                if (showToast) {
+                    Handler(mainLooper).post {
+                        val message = getString(R.string.client_connected_toast_msg, SNOWFLAKE_EMOJI, SNOWFLAKE_EMOJI)
+                        Toast.makeText(applicationContext, message, Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
-                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_CLIENT_CONNECTED))
-                clientsConnected++
+                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_CLIENT_CONNECTED)
+                    .putExtra(EXTRA_CLIENT_CONNECTED_COUNT, ++clientsConnected))
                 showNotificationText()
             }
             isProxyRunning = true
@@ -237,6 +245,7 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
             isProxyRunning = false
             var intent = Intent(ACTION_PAUSING).putExtra(EXTRA_PAUSING_REASON, reason)
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+            showNotificationText(reason, false)
         }
     }
 
