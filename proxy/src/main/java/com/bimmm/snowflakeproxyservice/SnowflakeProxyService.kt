@@ -6,6 +6,8 @@ import android.os.IBinder
 import IPtProxy.IPtProxy
 import android.app.*
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.Network
@@ -40,7 +42,13 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         const val EXTRA_START_CHECK_POWER = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_POWER"
         const val EXTRA_START_CHECK_UNMETERED = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_UNMETERED"
         const val EXTRA_START_SHOW_TOAST = "com.bimm.snowflakeproxyservice.EXTRA_START_SHOW_TOAST"
-        const val EXTRA_START_TOAST_MESSAGE = "com.bimm.snowflakeproxyservice.EXTRA_START_TOAST_MESSAGET"
+        const val EXTRA_START_TOAST_MESSAGE = "com.bimm.snowflakeproxyservice.EXTRA_START_TOAST_MESSAGE"
+
+        const val ACTION_STATUS = "com.bimm.snowflakeproxyservice.ACTION_STATUS"
+        const val EXTRA_STATUS_IS_PROXY_RUNNING = "com.bimm.snowflakeproxyservice.EXTRA_STATUS_IS_PROXY_RUNNING"
+        const val EXTRA_STATUS_CLIENT_CONNECTED_COUNT = "com.bimm.snowflakeproxyservice.EXTRA_STATUS_CLIENT_CONNECTED_COUNT"
+
+        const val ACTION_STOP = "com.bimm.snowflakeproxyservice.ACTION_STOP"
 
         const val ACTION_PAUSING = "com.bimm.snowflakeproxyservice.ACTION_PAUSING"
         const val EXTRA_PAUSING_REASON = "com.bimm.snowflakeproxyservice.EXTRA_PAUSING_REASON"
@@ -86,7 +94,6 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         super.onCreate()
         configIPtProxy()
         connectivityManager = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        initializeStateVars()
         connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 Log.d("ConnectivityManager", "onAvailable $network")
@@ -128,6 +135,20 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         showNotificationText()
         intent!!
 
+        when(intent.action) {
+            ACTION_START -> onActionStart(intent)
+            ACTION_STATUS -> onActionStatus()
+            ACTION_STOP -> onActionStop()
+        }
+
+        return START_STICKY
+    }
+
+    private fun onActionStop() {
+        stopSelf()
+    }
+
+    private fun onActionStart(intent: Intent) {
         shouldCheckForPower = intent.getBooleanExtra(EXTRA_START_CHECK_POWER, false)
         shouldCheckForUnmetered = intent.getBooleanExtra(EXTRA_START_CHECK_UNMETERED, false)
 
@@ -146,10 +167,24 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
         Log.d("test", "shouldCheckForPower=$shouldCheckForPower")
         Log.d("test", "shouldCheckForUnmetered=$shouldCheckForUnmetered")
-        return START_STICKY
+
+        initializeStateVars()
+
+    }
+
+    private fun onActionStatus() {
+        LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_STATUS)
+            .putExtra(EXTRA_STATUS_IS_PROXY_RUNNING, isProxyRunning)
+            .putExtra(EXTRA_STATUS_CLIENT_CONNECTED_COUNT, clientsConnected)
+            .putExtra(EXTRA_START_CHECK_POWER, shouldCheckForPower)
+            .putExtra(EXTRA_START_CHECK_UNMETERED, shouldCheckForUnmetered))
     }
 
     private fun showNotificationText() = showNotificationText(getString(R.string.clients_connected, clientsConnected), true)
+
+    private fun isAppOnTv(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) ||
+                packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
+
 
     private fun showNotificationText(text: String, isRunning: Boolean) {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -163,6 +198,15 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
                 .setPriority(NotificationManager.IMPORTANCE_LOW)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setOngoing(true)
+
+            if (isAppOnTv()) {
+                notificationBuilder?.apply {
+                    setExtras(null)
+                    setCategory(Notification.CATEGORY_RECOMMENDATION)
+                    setLargeIcon( Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888))
+                }
+            }
+
         }
 
         val notification = notificationBuilder?.apply {
@@ -237,12 +281,11 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         }
     }
 
-
     private fun pauseSnowflakeProxy(reason: String) {
         if (isProxyRunning) {
             IPtProxy.stopSnowflakeProxy()
             isProxyRunning = false
-            var intent = Intent(ACTION_PAUSING).putExtra(EXTRA_PAUSING_REASON, reason)
+            val intent = Intent(ACTION_PAUSING).putExtra(EXTRA_PAUSING_REASON, reason)
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             showNotificationText(reason, false)
         }
