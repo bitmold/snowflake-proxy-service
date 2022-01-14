@@ -1,18 +1,22 @@
 package com.bimmm.snowflakeproxyservice
 
-import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 
 import IPtProxy.IPtProxy
+import android.app.*
 import android.content.IntentFilter
+import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
 import android.os.Binder
+import android.os.Build
 import android.os.Handler
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import java.io.File
 
@@ -27,15 +31,18 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
     private var shouldCheckForPower = false
     private var shouldCheckForUnmetered = false
+    private var clientsConnected = 0
 
     companion object {
-        val ACTION_CLIENT_CONNECTED = "com.bimm.snowflakeproxyservice.ACTION_CLIENT_CONNECTED"
-        val ACTION_START = "com.bimm.snowflakeproxyservice.ACTION_START"
-        val EXTRA_START_CHECK_POWER = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_POWER"
-        val EXTRA_START_CHECK_UNMETERED = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_UNMETERED"
-        val ACTION_PAUSING = "com.bimm.snowflakeproxyservice.ACTION_PAUSING"
-        val EXTRA_PAUSING_REASON = "com.bimm.snowflakeproxyservice.EXTRA_PAUSING_REASON"
-        val ACTION_RESUMING = "com.bimm.snowflakeproxyservice.ACTION_RESUMING"
+        const val ACTION_CLIENT_CONNECTED = "com.bimm.snowflakeproxyservice.ACTION_CLIENT_CONNECTED"
+        const val ACTION_START = "com.bimm.snowflakeproxyservice.ACTION_START"
+        const val EXTRA_START_CHECK_POWER = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_POWER"
+        const val EXTRA_START_CHECK_UNMETERED = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_UNMETERED"
+        const val ACTION_PAUSING = "com.bimm.snowflakeproxyservice.ACTION_PAUSING"
+        const val EXTRA_PAUSING_REASON = "com.bimm.snowflakeproxyservice.EXTRA_PAUSING_REASON"
+        const val ACTION_RESUMING = "com.bimm.snowflakeproxyservice.ACTION_RESUMING"
+        const val ONGOING_NOTIFICATION_CHANNEL = "snowflake_proxy_channel"
+        const val ONGOING_NOTIFICATION_ID = 1
     }
 
     private lateinit var connectivityManager: ConnectivityManager
@@ -44,6 +51,8 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
     private var isPowerConnected = false
     private var isUnmetered = false
     private var isProxyRunning = false
+
+    private var notificationBuilder: NotificationCompat.Builder? = null
 
 
     override fun onCreate() {
@@ -91,11 +100,53 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+
+        showNotificationText()
+
         shouldCheckForPower = intent?.getBooleanExtra(EXTRA_START_CHECK_POWER, false) ?: false
         shouldCheckForUnmetered = intent?.getBooleanExtra(EXTRA_START_CHECK_UNMETERED, false) ?: false
         Log.d("test", "shouldCheckForPower=$shouldCheckForPower")
         Log.d("test", "shouldCheckForUnmetered=$shouldCheckForUnmetered")
         return START_STICKY
+    }
+
+    private fun showNotificationText() = showNotificationText("Clients Connected: $clientsConnected")
+
+    private fun showNotificationText(text: String) {
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val appIntent = packageManager.getLaunchIntentForPackage(packageName)
+
+        if (notificationBuilder == null) {
+            notificationBuilder = NotificationCompat.Builder(this, ONGOING_NOTIFICATION_CHANNEL)
+                .setContentTitle("Snowflake Proxy Service")
+                .setContentIntent(PendingIntent.getActivity(this, 0, appIntent, 0))
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setPriority(NotificationManager.IMPORTANCE_LOW)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setOngoing(true)
+        }
+
+        val notification = notificationBuilder?.setContentText(text)?.build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel(notificationManager)
+            startForeground(ONGOING_NOTIFICATION_ID, notification)
+        } else {
+            notificationManager.notify(ONGOING_NOTIFICATION_ID, notification)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createNotificationChannel(notificationManager: NotificationManager) {
+        Log.d("foo", "create channel")
+        val channel = NotificationChannel(ONGOING_NOTIFICATION_CHANNEL, "Snowflake Proxy Service", NotificationManager.IMPORTANCE_LOW).apply {
+            lightColor = Color.BLUE
+            lockscreenVisibility = Notification.VISIBILITY_SECRET
+            description = "Information about snowflake"
+            enableVibration(false)
+            setShowBadge(false)
+        }
+        notificationManager.createNotificationChannel(channel)
     }
 
     override fun onPowerStateChanged(isPowerConnected: Boolean) {
@@ -130,7 +181,7 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         val natProbe: String? = null
         val logFile: String? = null
         val keepLocalAddresses = true
-        val unsafeLogging = true // todo for now ...
+        val unsafeLogging = false
         if (!isProxyRunning) {
             IPtProxy.startSnowflakeProxy(
                 1,
@@ -150,6 +201,8 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
                     ).show()
                 }
                 LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_CLIENT_CONNECTED))
+                clientsConnected++
+                showNotificationText()
             }
             isProxyRunning = true
             LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_RESUMING))
