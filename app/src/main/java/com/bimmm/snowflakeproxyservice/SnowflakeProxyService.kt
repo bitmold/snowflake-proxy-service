@@ -87,13 +87,11 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         initializeStateVars()
         connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                super.onAvailable(network)
-                Log.d("test", "onAvailable $network")
+                Log.d("ConnectivityManager", "onAvailable $network")
             }
 
             override fun onLost(network: Network) {
-                super.onLost(network)
-                Log.d("test", "onLost $network")
+                Log.d("ConnectivityManager", "onLost $network")
                 onNetworkStateChanged()
             }
         })
@@ -240,7 +238,6 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
 
     private fun pauseSnowflakeProxy(reason: String) {
-        Log.d("test", "pausing snowflake proxy: $reason")
         if (isProxyRunning) {
             IPtProxy.stopSnowflakeProxy()
             isProxyRunning = false
