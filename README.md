@@ -11,13 +11,13 @@ To Use `SnowflakeProxyService` in your `Activity` create an `Intent` and start i
 
 ```kotlin
 val intent = Intent(this, SnowflakeProxyService::class.java)
-                .setAction(SnowflakeProxyService.ACTION_START)
+	.setAction(SnowflakeProxyService.ACTION_START)
 
 
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                startForegroundService(intent)
-            else
-                startService(intent)
+	startForegroundService(intent)
+else
+	startService(intent)
 
 ```
 
@@ -63,9 +63,9 @@ The above example can be extended to pause the service by adding in `Intent` ext
 
 ```kotlin
 val intent = Intent(this, SnowflakeProxyService::class.java)
-                .setAction(SnowflakeProxyService.ACTION_START)
-                .putExtra(SnowflakeProxyService.EXTRA_START_CHECK_POWER, true)
-                .putExtra(SnowflakeProxyService.EXTRA_START_CHECK_UNMETERED, true)
+	.setAction(SnowflakeProxyService.ACTION_START)
+	.putExtra(SnowflakeProxyService.EXTRA_START_CHECK_POWER, true)
+	.putExtra(SnowflakeProxyService.EXTRA_START_CHECK_UNMETERED, true)
 
 ```  
 
@@ -79,19 +79,37 @@ Your app can fully configure the underlying snowflake proxy, although by default
 
 ```kotlin
 val intent = Intent(this, SnowflakeProxyService::class.java)
-                .setAction(SnowflakeProxyService.ACTION_START)
+	.setAction(SnowflakeProxyService.ACTION_START)
                 
-                // URL configuration
-                .putExtra(SnowflakeProxyService.EXTRA_PROXY_BROKER_URL, "https://snowflake-broker.torproject.net/")
-                .putExtra(SnowflakeProxyService.EXTRA_PROXY_RELAY_URL, "wss://snowflake.bamsoftware.com/")
-                .putExtra(SnowflakeProxyService.EXTRA_PROXY_BROKER_URL, "stun:stun.stunprotocol.org:3478")
-                .putExtra(SnowflakeProxyService.EXTRA_PROXY_NAT_PROBE_URL, "https://snowflake-broker.torproject.net:8443/probe")
+	// URL configuration
+	.putExtra(SnowflakeProxyService.EXTRA_PROXY_BROKER_URL, "https://snowflake-broker.torproject.net/")
+	.putExtra(SnowflakeProxyService.EXTRA_PROXY_RELAY_URL, "wss://snowflake.bamsoftware.com/")
+	.putExtra(SnowflakeProxyService.EXTRA_PROXY_BROKER_URL, "stun:stun.stunprotocol.org:3478")
+	 putExtra(SnowflakeProxyService.EXTRA_PROXY_NAT_PROBE_URL, "https://snowflake-broker.torproject.net:8443/probe")
 
 
-                // Proxy configuration
-                .putExtra(SnowflakeProxyService.EXTRA_PROXY_LOG_FILE_NAME, "mylog.log") // log file, default is STDERR
-                .putExtra(SnowflakeProxyService.EXTRA_PROXY_CAPACITY, 10) // number of concurrent clients 
-                .putExtra(SnowflakeProxyService.EXTRA_PROXY_USE_UNSAFE_LOGGING, false) // scrub logs
+	// Proxy configuration 
+	.putExtra(SnowflakeProxyService.EXTRA_PROXY_LOG_FILE_NAME, "mylog.log") // log file, default is STDERR
+	.putExtra(SnowflakeProxyService.EXTRA_PROXY_CAPACITY, 10) // number of concurrent clients 
+	.putExtra(SnowflakeProxyService.EXTRA_PROXY_USE_UNSAFE_LOGGING, false) // scrub logs
 
 ```
 
+### Toast Configuration 
+
+
+`SnowflakeProxyService` can optionally display a `Toast` to your users whenever someone uses your snowflake to bypass censorship. 
+
+
+```kotlin
+val intent = Intent(this, SnowflakeProxyService::class.java)
+	.setAction(SnowflakeProxyService.ACTION_START)
+	.putExtra(SnowflakeProxyService.EXTRA_START_SHOW_TOAST, true)
+
+
+	// this displays: ❄️ Your snowflake proxy helped someone circumvent censorship ❄️
+
+	// unless you specify your own message:
+	.putExtra(SnowflakeProxyService.EXTRA_START_TOAST_MESSAGE, "yay, someone got connected thanks to you")
+
+```

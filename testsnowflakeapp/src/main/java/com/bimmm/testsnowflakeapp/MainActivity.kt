@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
                 .setAction(SnowflakeProxyService.ACTION_START)
                 .putExtra(SnowflakeProxyService.EXTRA_START_CHECK_POWER, scPower.isChecked)
                 .putExtra(SnowflakeProxyService.EXTRA_START_CHECK_UNMETERED, scMetered.isChecked)
+                .putExtra(SnowflakeProxyService.EXTRA_START_SHOW_TOAST, true)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 startForegroundService(intent)
             else

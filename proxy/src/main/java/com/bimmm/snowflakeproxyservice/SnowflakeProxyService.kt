@@ -40,6 +40,7 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         const val EXTRA_START_CHECK_POWER = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_POWER"
         const val EXTRA_START_CHECK_UNMETERED = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_UNMETERED"
         const val EXTRA_START_SHOW_TOAST = "com.bimm.snowflakeproxyservice.EXTRA_START_SHOW_TOAST"
+        const val EXTRA_START_TOAST_MESSAGE = "com.bimm.snowflakeproxyservice.EXTRA_START_TOAST_MESSAGET"
 
         const val ACTION_PAUSING = "com.bimm.snowflakeproxyservice.ACTION_PAUSING"
         const val EXTRA_PAUSING_REASON = "com.bimm.snowflakeproxyservice.EXTRA_PAUSING_REASON"
@@ -63,6 +64,7 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
     private lateinit var powerReceiver: PowerConnectionReceiver
 
     private var showToast = false
+    private lateinit var toastMessage: String
 
     private var isPowerConnected = false
     private var isUnmetered = false
@@ -129,7 +131,8 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         shouldCheckForPower = intent.getBooleanExtra(EXTRA_START_CHECK_POWER, false)
         shouldCheckForUnmetered = intent.getBooleanExtra(EXTRA_START_CHECK_UNMETERED, false)
 
-        showToast = intent.getBooleanExtra(EXTRA_START_SHOW_TOAST, true)
+        showToast = intent.getBooleanExtra(EXTRA_START_SHOW_TOAST, false)
+        toastMessage = intent.getStringExtra(EXTRA_START_TOAST_MESSAGE) ?: getString(R.string.client_connected_toast_msg, SNOWFLAKE_EMOJI, SNOWFLAKE_EMOJI)
 
         proxyCapacity = intent.getIntExtra(EXTRA_PROXY_CAPACITY, 1)
         proxyNatProbeUrl = intent.getStringExtra(EXTRA_PROXY_NAT_PROBE_URL)
@@ -221,9 +224,7 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
             ) {
                 if (showToast) {
                     Handler(mainLooper).post {
-                        val message = getString(R.string.client_connected_toast_msg, SNOWFLAKE_EMOJI, SNOWFLAKE_EMOJI)
-                        Toast.makeText(applicationContext, message, Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(applicationContext, toastMessage, Toast.LENGTH_LONG).show()
                     }
                 }
                 LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_CLIENT_CONNECTED)
