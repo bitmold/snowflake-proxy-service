@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         scMetered.isChecked = savedInstanceState?.getBoolean(BUNDLE_KEY_METERED, false) ?: false
 
         findViewById<Button>(R.id.btnStartService).setOnClickListener {
-            var intent = Intent(this, SnowflakeProxyService::class.java)
+            val intent = Intent(this, SnowflakeProxyService::class.java)
                 .setAction(SnowflakeProxyService.ACTION_START)
                 .putExtra(SnowflakeProxyService.EXTRA_START_CHECK_POWER, scPower.isChecked)
                 .putExtra(SnowflakeProxyService.EXTRA_START_CHECK_UNMETERED, scMetered.isChecked)
@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState, outPersistentState)
     }
 
-    private var receiver = object : BroadcastReceiver() {
+    private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) = when (intent?.action) {
             SnowflakeProxyService.ACTION_CLIENT_CONNECTED -> {
                 val count = intent.getIntExtra(SnowflakeProxyService.EXTRA_CLIENT_CONNECTED_COUNT, -1)
