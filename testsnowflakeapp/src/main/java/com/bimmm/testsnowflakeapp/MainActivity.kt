@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent?) = when (intent?.action) {
             SnowflakeProxyService.ACTION_CLIENT_CONNECTED -> {
                 val count = intent.getIntExtra(SnowflakeProxyService.EXTRA_CLIENT_CONNECTED_COUNT, -1)
-                tvCount.text = "Clients Connected: $count}"
+                tvCount.text = "Clients Connected: $count"
             }
             SnowflakeProxyService.ACTION_PAUSING -> {
                 val reason = intent.getStringExtra(SnowflakeProxyService.EXTRA_PAUSING_REASON)

@@ -3,7 +3,13 @@
 Service to start and stop a <a href="https://snowflake.torproject.org/">Snowflake Proxy</a> based off of <a href="https://github.com/tladesignz/IPtProxy/">IPtProxy</a>. This is a work in progress at the moment...
 
 
-### Getting Started
+## Getting Started
+
+
+In your app's `AndroidManifest.xml` declare `SnowflakeProxyService` within the `<application>` tag:
+```xml
+<service android:name="com.bimmm.snowflakeproxyservice.SnowflakeProxyService"/>
+```
 
 
 To Use `SnowflakeProxyService` in your `Activity` create an `Intent` and start it as follows:
@@ -55,7 +61,7 @@ LocalBroadcastManager.getInstance(this).apply {
         }
 ```
 
-### Pausing the Proxy 
+## *Pausing* the Proxy 
 
 `SnowflakeProxyService` can be configured to pause the snowflake proxy. This means that the service will still continue to be running, but that your app won't act as a snowflake. Currently `SnowflakeProxyService` can be configured to pause if the device loses connection to power and/or if the device loses its network connection to an unmetered network connection. 
 
@@ -73,7 +79,7 @@ If either of these `Intent` extra's are specified, `SnowflakeProxyService` may e
 
 When the proxy resumes, an event of `SnowflakeProxyService.ACTION_RESUMING` is emitted. 
 
-### Proxy Configuration 
+## Proxy Configuration 
 
 Your app can fully configure the underlying snowflake proxy, although by default `SnowflakeProxyService` uses the defaults specified in <a href="https://github.com/tladesignz/IPtProxy">IPtProxy</a>. An up-to-date explanation of how snowflake functions on <a href="https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/wikis/Technical%20Overview">The Tor Project's wiki</a>.
 
@@ -95,7 +101,7 @@ val intent = Intent(this, SnowflakeProxyService::class.java)
 
 ```
 
-### Toast Configuration 
+## Toast Configuration 
 
 
 `SnowflakeProxyService` can optionally display a `Toast` to your users whenever someone uses your snowflake to bypass censorship. 
@@ -113,3 +119,26 @@ val intent = Intent(this, SnowflakeProxyService::class.java)
 	.putExtra(SnowflakeProxyService.EXTRA_START_TOAST_MESSAGE, "yay, someone got connected thanks to you")
 
 ```
+
+### Android Permissions 
+Using `SnowflakeProxyService` introduces the following permissions into your app:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.INTERNET"/>
+<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+```
+
+
+# To do ...
+This is a work in progress, right now there needs to be:
+- a way to package and distribute the AAR for this library 
+- more documentation in the code 
+- more polish on the sample app 
+- graphical assets for the snowflake notification icon
+- optimization on the receivers that the proxy uses for pausing. these system resources need not be allocated unless the service uses them 
+- documenation on **stopping** the service
+- the service ought to be used in a real app, will experiment with this in <a href="https://github.com/guardianproject/Orbot">Orbot</a>
+- a way for the handful of string resources this library uses to be translated
+- refactor the library to a package name that's not `com.bimm.*...`
