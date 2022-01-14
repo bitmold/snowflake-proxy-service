@@ -27,7 +27,7 @@ else
 
 ```
 
-This will start the proxy service in your application. After starting the service, in your app, you can use `BroadcastReceiver` to listen to events from `Service`. You may listen to the events `SnowflakeProxyService.ACTION_CLIENT_CONNECTED`, `SnowflakeProxyService.ACTION_PAUSING` and `SnowflakeProxyService.ACTION_RESUMING`
+This will start the proxy service in your application. After starting the service, in your app, you can use `BroadcastReceiver` to listen to events from `SnowflakeProxyService`. It may broadcast `SnowflakeProxyService.ACTION_CLIENT_CONNECTED`, `SnowflakeProxyService.ACTION_PAUSING` and `SnowflakeProxyService.ACTION_RESUMING`
 
 ```kotlin
     private val receiver = object : BroadcastReceiver() {
@@ -50,7 +50,7 @@ This will start the proxy service in your application. After starting the servic
     }
 ```
 
-Typically in your `Activity`'s `onCreate(Bundle?)` method, your app specifies wihch events, if any, it wants to listen to. 
+Typically in your `Activity`'s `onCreate(Bundle?)` method, your app specifies wihch events, if any, it wants to listen to:
 
 
 ```kotlin
@@ -63,9 +63,9 @@ LocalBroadcastManager.getInstance(this).apply {
 
 ## *Pausing* the Proxy 
 
-`SnowflakeProxyService` can be configured to pause the snowflake proxy. This means that the service will still continue to be running, but that your app won't act as a snowflake. Currently `SnowflakeProxyService` can be configured to pause if the device loses connection to power and/or if the device loses its network connection to an unmetered network connection. 
+`SnowflakeProxyService` can be configured to pause the snowflake proxy. This means that the service will still continue to be running, but that your app won't act as a snowflake. Currently `SnowflakeProxyService` can be paused if the device loses connection to power and/or if the device loses its network connection to an unmetered network connection. 
 
-The above example can be extended to pause the service by adding in `Intent` extras to optionally pause `SnowflakeProxyService`. In this example, your app will only function as a Snowflake proxy if the device is connected to power and an unmetered connection (typically a Wi-Fi connection):
+The above example can be extended to pause the `SnowflakeProxyService` by adding in these `Intent` extras. In this example, your app will only function as a Snowflake proxy if the device is connected to power and an unmetered connection (typically a Wi-Fi connection):
 
 ```kotlin
 val intent = Intent(this, SnowflakeProxyService::class.java)
@@ -79,9 +79,11 @@ If either of these `Intent` extra's are specified, `SnowflakeProxyService` may e
 
 When the proxy resumes, an event of `SnowflakeProxyService.ACTION_RESUMING` is emitted. 
 
+The idea at the moment behind pausing is for use cases where your app may be running for a long time, say when the uesr goes to bed or isn't using their Android device. In other cases, it may make sense to simply kill `SnowflakeProxyService` rather than having it run in this *paused* state.
+
 ## Proxy Configuration 
 
-Your app can fully configure the underlying snowflake proxy, although by default `SnowflakeProxyService` uses the defaults specified in <a href="https://github.com/tladesignz/IPtProxy">IPtProxy</a>. An up-to-date explanation of how snowflake functions on <a href="https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/wikis/Technical%20Overview">The Tor Project's wiki</a>.
+Your app can fully configure the underlying snowflake proxy, although by default `SnowflakeProxyService` uses the defaults specified in <a href="https://github.com/tladesignz/IPtProxy">IPtProxy</a>. An up-to-date explanation of how snowflake functions can be found on <a href="https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/wikis/Technical%20Overview">The Tor Project's wiki</a>.
 
 ```kotlin
 val intent = Intent(this, SnowflakeProxyService::class.java)
@@ -120,7 +122,7 @@ val intent = Intent(this, SnowflakeProxyService::class.java)
 
 ```
 
-### Android Permissions 
+## Android Permissions 
 Using `SnowflakeProxyService` introduces the following permissions into your app:
 
 ```xml
@@ -142,3 +144,4 @@ This is a work in progress, right now there needs to be:
 - the service ought to be used in a real app, will experiment with this in <a href="https://github.com/guardianproject/Orbot">Orbot</a>
 - a way for the handful of string resources this library uses to be translated
 - refactor the library to a package name that's not `com.bimm.*...`
+- use a more forgiving minSdk version, right now there are just IDE defaults...
