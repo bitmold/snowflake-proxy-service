@@ -55,10 +55,10 @@ Typically in your `Activity`'s `onCreate(Bundle?)` method, your app specifies wi
 
 ```kotlin
 LocalBroadcastManager.getInstance(this).apply {
-            registerReceiver(receiver, IntentFilter(SnowflakeProxyService.ACTION_CLIENT_CONNECTED))
-            registerReceiver(receiver, IntentFilter(SnowflakeProxyService.ACTION_PAUSING))
-            registerReceiver(receiver, IntentFilter(SnowflakeProxyService.ACTION_RESUMING))
-        }
+	registerReceiver(receiver, IntentFilter(SnowflakeProxyService.ACTION_CLIENT_CONNECTED))
+	registerReceiver(receiver, IntentFilter(SnowflakeProxyService.ACTION_PAUSING))
+	registerReceiver(receiver, IntentFilter(SnowflakeProxyService.ACTION_RESUMING))
+}
 ```
 
 ## *Pausing* the Proxy 
