@@ -1,4 +1,4 @@
-package com.bimmm.snowflakeproxyservice
+package com.bimmm.testsnowflakeapp
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -13,12 +13,12 @@ import android.widget.*
 import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
+import com.bimmm.snowflakeproxyservice.SnowflakeProxyService
+
 class MainActivity : AppCompatActivity() {
     private lateinit var tvCount: TextView
     private lateinit var scPower : SwitchCompat
     private lateinit var scMetered : SwitchCompat
-
-    private var count = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,17 +70,17 @@ class MainActivity : AppCompatActivity() {
     private var receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) = when (intent?.action) {
             SnowflakeProxyService.ACTION_CLIENT_CONNECTED -> {
-                tvCount.text = "Clients Connected: ${intent?.getIntExtra(SnowflakeProxyService.EXTRA_CLIENT_CONNECTED_COUNT, -1)}"
+                val count = intent.getIntExtra(SnowflakeProxyService.EXTRA_CLIENT_CONNECTED_COUNT, -1)
+                tvCount.text = "Clients Connected: $count}"
             }
             SnowflakeProxyService.ACTION_PAUSING -> {
-                var reason = intent.getStringExtra(SnowflakeProxyService.EXTRA_PAUSING_REASON)
+                val reason = intent.getStringExtra(SnowflakeProxyService.EXTRA_PAUSING_REASON)
                 Toast.makeText(context, "Pausing proxy: $reason", Toast.LENGTH_LONG).show()
             }
             SnowflakeProxyService.ACTION_RESUMING -> {
                 Toast.makeText(context, "Proxy resuming", Toast.LENGTH_LONG).show()
             }
-            else -> {
-            }
+            else -> {}
         }
     }
 
