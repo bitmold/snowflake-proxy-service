@@ -8,5 +8,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "SnowflakeProxyService"
-include ':app'
+include ':proxy'
 include ':testsnowflakeapp'
