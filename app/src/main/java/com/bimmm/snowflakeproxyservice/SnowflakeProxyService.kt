@@ -38,11 +38,22 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         const val ACTION_START = "com.bimm.snowflakeproxyservice.ACTION_START"
         const val EXTRA_START_CHECK_POWER = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_POWER"
         const val EXTRA_START_CHECK_UNMETERED = "com.bimm.snowflakeproxyservice.EXTRA_START_CHECK_UNMETERED"
+
         const val ACTION_PAUSING = "com.bimm.snowflakeproxyservice.ACTION_PAUSING"
         const val EXTRA_PAUSING_REASON = "com.bimm.snowflakeproxyservice.EXTRA_PAUSING_REASON"
         const val ACTION_RESUMING = "com.bimm.snowflakeproxyservice.ACTION_RESUMING"
-        const val ONGOING_NOTIFICATION_CHANNEL = "snowflake_proxy_channel"
-        const val ONGOING_NOTIFICATION_ID = 1
+
+        const val EXTRA_PROXY_CAPACITY = "com.bimm.snowflakeproxyservice.EXTRA_PROXY_CAPACITY"
+        const val EXTRA_PROXY_NAT_PROBE_URL = "com.bimm.snowflakeproxyservice.EXTRA_PROXY_NAT_PROBE_URL"
+        const val EXTRA_PROXY_BROKER_URL = "com.bimm.snowflakeproxyservice.EXTRA.PROXY_BROKER_URL"
+        const val EXTRA_PROXY_STUN_URL = "com.bimm.snowflakeproxyservice.EXTRA.PROXY_STUN_URL"
+        const val EXTRA_PROXY_RELAY_URL = "com.bimm.snowflakeproxyservice.EXTRA_PROXY_RELAY_URL"
+        const val EXTRA_PROXY_LOG_FILE_NAME = "com.bimm.snowflakeproxyservice.EXTRA_PROXY_LOG_FILE_NAME"
+        const val EXTRA_PROXY_KEEP_LOCAL_ADDRESSES = "com.bimm.snowflakeproxyservice.EXTRA_PROXY_KEEP_LOCAL_ADDRESSES"
+        const val EXTRA_PROXY_USE_UNSAFE_LOGGING = "com.bimm.snowflakeproxyservice.EXTRA_PROXY_USE_UNSAFE_LOGGING"
+
+        private const val ONGOING_NOTIFICATION_CHANNEL = "snowflake_proxy_channel"
+        private const val ONGOING_NOTIFICATION_ID = 1
     }
 
     private lateinit var connectivityManager: ConnectivityManager
@@ -53,6 +64,15 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
     private var isProxyRunning = false
 
     private var notificationBuilder: NotificationCompat.Builder? = null
+
+    private var proxyCapacity = 0
+    private var proxyBrokerUrl: String? = null
+    private var proxyNatProbeUrl: String? = null
+    private var proxyRelayUrl: String? = null
+    private var proxyLogFileName: String? = null
+    private var proxyStunUrl: String? = null
+    private var proxyKeepLocalAddresses = false
+    private var proxyUnsafeLogging = false
 
 
     override fun onCreate() {
@@ -102,9 +122,21 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
         super.onStartCommand(intent, flags, startId)
 
         showNotificationText()
+        intent!!
 
-        shouldCheckForPower = intent?.getBooleanExtra(EXTRA_START_CHECK_POWER, false) ?: false
-        shouldCheckForUnmetered = intent?.getBooleanExtra(EXTRA_START_CHECK_UNMETERED, false) ?: false
+        shouldCheckForPower = intent.getBooleanExtra(EXTRA_START_CHECK_POWER, false)
+        shouldCheckForUnmetered = intent.getBooleanExtra(EXTRA_START_CHECK_UNMETERED, false)
+
+        proxyCapacity = intent.getIntExtra(EXTRA_PROXY_CAPACITY, 1)
+        proxyNatProbeUrl = intent.getStringExtra(EXTRA_PROXY_NAT_PROBE_URL)
+        proxyBrokerUrl = intent.getStringExtra(EXTRA_PROXY_BROKER_URL)
+        proxyKeepLocalAddresses = intent.getBooleanExtra(EXTRA_PROXY_KEEP_LOCAL_ADDRESSES, true)
+        proxyLogFileName = intent.getStringExtra(EXTRA_PROXY_LOG_FILE_NAME)
+        proxyUnsafeLogging = intent.getBooleanExtra(EXTRA_PROXY_USE_UNSAFE_LOGGING, false)
+        proxyRelayUrl = intent.getStringExtra(EXTRA_PROXY_RELAY_URL)
+        proxyStunUrl = intent.getStringExtra(EXTRA_PROXY_STUN_URL)
+
+
         Log.d("test", "shouldCheckForPower=$shouldCheckForPower")
         Log.d("test", "shouldCheckForUnmetered=$shouldCheckForUnmetered")
         return START_STICKY
@@ -175,23 +207,11 @@ class SnowflakeProxyService : Service(), PowerConnectionReceiver.Callback {
 
     private fun startSnowflakeProxy() {
         Log.d("test", "Starting snowflake proxy...")
-        val broker: String? = null // "https://snowflake-broker.bamsoftware.com/";
-        val relay: String? = null // "wss://snowflake.bamsoftware.com/";
-        val stun: String? = null // "stun:stun.stunprotocol.org:3478";
-        val natProbe: String? = null
-        val logFile: String? = null
-        val keepLocalAddresses = true
-        val unsafeLogging = false
         if (!isProxyRunning) {
             IPtProxy.startSnowflakeProxy(
-                1,
-                broker,
-                relay,
-                stun,
-                natProbe,
-                logFile,
-                keepLocalAddresses,
-                unsafeLogging
+                proxyCapacity as Long, proxyBrokerUrl, proxyRelayUrl,
+                proxyStunUrl, proxyNatProbeUrl, proxyLogFileName,
+                proxyKeepLocalAddresses, proxyUnsafeLogging
             ) {
                 Handler(mainLooper).post {
                     Toast.makeText(
